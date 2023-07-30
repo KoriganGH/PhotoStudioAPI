@@ -1,0 +1,12 @@
+[
+    { 
+       "can_login": "True",
+       "create_order": "True",
+       "change_order": "True",
+       "post_news": "True",
+       "create_new_users": "True",
+       "delete_users": "True",
+       "manage_company_order": "True",
+       "create_company_order": "True"
+    }
+]
