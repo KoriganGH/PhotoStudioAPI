@@ -124,3 +124,13 @@ class CreateCompanyOrder(CompanyOrder):
     class Meta:
         verbose_name = 'order_placed'
         verbose_name_plural = 'order_placed'
+
+class CompanyOrderProccess(CompanyOrder):
+    class Meta:
+        verbose_name = 'order_placed'
+        verbose_name_plural = 'order_placed'
+
+class CompanyOrderComplete(CompanyOrder):
+    class Meta:
+        verbose_name = 'order_placed'
+        verbose_name_plural = 'order_placed'
