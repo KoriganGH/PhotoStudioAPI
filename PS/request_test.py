@@ -1,6 +1,7 @@
 import requests
 
 # params = {
+#     'action': 'add',
 #     'first_name': 'Pavel',
 #     'surname': 'Romantsov',
 #     'number': '+79064334014',
@@ -11,28 +12,35 @@ import requests
 #     'orders_count': '2'
 # }
 #
-# headers = {}
 # session = requests.Session()
-# resp = session.post('http://127.0.0.1:8000/add_new_user/', data=params)
+# resp = session.post('http://127.0.0.1:8000/user/', data=params)
 #
 # print(resp)
 
 
-# headers = {}
 # session = requests.Session()
-# resp = session.post('http://127.0.0.1:8000/delete_user/', data={'id': '6'})
+# resp = session.post('http://127.0.0.1:8000/user/', data={'action': 'delete', 'id': '3'})
 #
 # print(resp)
 
-# headers = {}
 # session = requests.Session()
-# resp = session.post('http://127.0.0.1:8000/update_user/', data={'id': '5', 'surname': 'XXXXXX'})
-
+# resp = session.post('http://127.0.0.1:8000/user/', data={'action':'update', 'id': '13', 'surname': 'XXXXXX23'})
+#
 # print(resp)
 
 
-headers = {}
+# session = requests.Session()
+# resp = session.post('http://127.0.0.1:8000/user/', data={'action':'get_user', 'date': '2023-07-31', 'lab': '1'})
+#
+# print(resp.text)
+
+
+# session = requests.Session()
+# resp = session.post('http://127.0.0.1:8000/schedule/', data={'action': 'add', 'employee': '1', 'date': '2023-10-31', 'lab':'1'})
+#
+# print(resp)
+#
 session = requests.Session()
-resp = session.post('http://127.0.0.1:8000/get_user/', data={'date': '2023-07-31', 'lab': '1'})
+resp = session.post('http://127.0.0.1:8000/orders/', data={'action': 'get_all'})
 
 print(resp.text)
