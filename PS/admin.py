@@ -27,22 +27,25 @@ class UsersAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(models.OrderPaid)
-class UsersAdmin(admin.ModelAdmin):
+# @admin.register(models.OrderPaid)
+# class UsersAdmin(admin.ModelAdmin):
+#     pass
+
+
+# @admin.register(models.OrderInProccess)
+# class UsersAdmin(admin.ModelAdmin):
+#     pass
+
+
+# @admin.register(models.OrderPlace)
+# class UsersAdmin(admin.ModelAdmin):
+#     pass
+
+
+# @admin.register(models.OrderPlaced)
+# class UsersAdmin(admin.ModelAdmin):
     pass
-
-
-@admin.register(models.OrderInProccess)
-class UsersAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.OrderPlace)
-class UsersAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.OrderPlaced)
+@admin.register(models.CompanyOrderStatus)
 class UsersAdmin(admin.ModelAdmin):
     pass
 
