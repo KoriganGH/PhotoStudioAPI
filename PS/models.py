@@ -1,6 +1,5 @@
 from django.db.models import Model, CASCADE
-from django.db.models import CharField, ForeignKey, IntegerField, JSONField, DateTimeField
-from enum import Enum
+from django.db.models import CharField, ForeignKey, IntegerField, JSONField, DateTimeField, BooleanField, BinaryField
 from django.contrib.auth.models import AbstractUser
 
 
@@ -29,6 +28,7 @@ class BasicUser(Model):
     telegram_id = CharField("telegram_id", max_length=64, null=True)
     orders_count = IntegerField("orders_count", null=False)
     permissions = JSONField("permissions", null=True)
+    availableToday = BooleanField('available_today', null=True)
     registration_date = DateTimeField("reg_date", auto_now_add=True)
 
     def __str__(self):
@@ -134,3 +134,23 @@ class CompanyOrderComplete(CompanyOrder):
     class Meta:
         verbose_name = 'order_placed'
         verbose_name_plural = 'order_placed'
+
+
+class Schedule(Model):
+    date = DateTimeField('date')
+    employee = ForeignKey(BasicUser, on_delete=CASCADE)
+    lab = ForeignKey(Lab, on_delete=CASCADE)
+
+
+class NewsTypes(Model):
+    type = CharField('news_type', max_length=128, null=True)
+
+class News(Model):
+    news_type = ForeignKey(NewsTypes, on_delete=CASCADE)
+    header = CharField('header', max_length=256, null=False)
+    # picture = BinaryField('picture', null=True)
+    content = CharField('content', max_length=1028, null=False)
+    telegram_post = BooleanField('telegram_post', default=False)
+    post_date = DateTimeField('post_date', auto_now_add=True)
+    editor = ForeignKey(BasicUser, on_delete=CASCADE)
+

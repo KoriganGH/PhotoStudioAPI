@@ -26,6 +26,6 @@ import requests
 
 headers = {}
 session = requests.Session()
-resp = session.post('http://127.0.0.1:8000/update_user/', data={'id': '4', 'surname': 'XXXXXX'})
+resp = session.post('http://127.0.0.1:8000/update_user/', data={'id': '5', 'surname': 'XXXXXX'})
 
 print(resp)
