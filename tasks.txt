@@ -1,0 +1,15 @@
+models:
+Lab, Role > BasicUser
+OrderStatus, BasicUser, Lab > Order
+CompanyOrderStatus, Lab, BasicUser, Basicuser(can_null) > CompanyOrder
+BasicUser, Lab > Schedule
+NewsType, BasicUser > News
+
+Пользователь:
+Создание, Изменение полей, удаление, возможность входа
+Заказ:
+Создание, изменение полей, удаление, счетчик пользователю
+Корпоративный заказ:
+Создание, изменение статуса, удаление
+Расписание:
+Создание расписания

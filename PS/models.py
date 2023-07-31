@@ -55,7 +55,7 @@ class Order(Model):
     lab = ForeignKey(Lab, on_delete=CASCADE)
     order_name = CharField('order_name', max_length=128, null=False)
     description = CharField('description', max_length=1024, null=True)
-    #customer = CharField('')
+    status = ForeignKey(OrderStatus, on_delete=CASCADE, default='paid')
     exec = ForeignKey(BasicUser, on_delete=CASCADE)
     status = ForeignKey(OrderStatus, on_delete=CASCADE)
     deadline = DateTimeField('deadline', null=True)
@@ -63,44 +63,6 @@ class Order(Model):
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
-
-
-class OrderPaid(Order):
-
-    def __str__(self):
-        return self.status, self.order_name
-
-    class Meta:
-        verbose_name = 'Оплаченный заказ'
-        verbose_name_plural = 'Оплаченные заказы'
-
-
-class OrderInProccess(Order):
-    def __str__(self):
-        return self.status, self.order_name
-
-    class Meta:
-        verbose_name = 'Заказ в работе'
-        verbose_name_plural = 'Заказы в работе'
-
-
-class OrderPlace(Order):
-    def __str__(self):
-        return self.status, self.order_name
-
-    class Meta:
-        verbose_name = 'order_place'
-        verbose_name_plural = 'order_place'
-
-
-class OrderPlaced(Order):
-    def __str__(self):
-        return self.status, self.order_name
-
-    class Meta:
-        verbose_name = 'order_placed'
-        verbose_name_plural = 'order_placed'
-
 
 class CompanyOrderStatus(Model):
     status_name = CharField("status", max_length=128, null=True)
@@ -117,36 +79,22 @@ class CompanyOrder(Model):
     creation_date = DateTimeField("reg_date", auto_now_add=True)
     order_name = CharField('order_name', max_length=128, null=False)
     description = CharField('description', max_length=1024, null=True)
+    status = ForeignKey(CompanyOrderStatus, on_delete=CASCADE, default='created')
     lab = ForeignKey(Lab, on_delete=CASCADE)
-
-
-class CreateCompanyOrder(CompanyOrder):
-    class Meta:
-        verbose_name = 'order_placed'
-        verbose_name_plural = 'order_placed'
-
-class CompanyOrderProccess(CompanyOrder):
-    class Meta:
-        verbose_name = 'order_placed'
-        verbose_name_plural = 'order_placed'
-
-class CompanyOrderComplete(CompanyOrder):
-    class Meta:
-        verbose_name = 'order_placed'
-        verbose_name_plural = 'order_placed'
-
+    exec = ForeignKey(BasicUser, on_delete=CASCADE, null=True)
+    order_creator = ForeignKey(BasicUser, on_delete=CASCADE)
 
 class Schedule(Model):
     date = DateTimeField('date')
-    employee = ForeignKey(BasicUser, on_delete=CASCADE)
+    employee = ForeignKey(BasicUser, on_delete=CASCADE, related_name='days')
     lab = ForeignKey(Lab, on_delete=CASCADE)
 
 
-class NewsTypes(Model):
+class NewsType(Model):
     type = CharField('news_type', max_length=128, null=True)
 
 class News(Model):
-    news_type = ForeignKey(NewsTypes, on_delete=CASCADE)
+    news_type = ForeignKey(NewsType, on_delete=CASCADE)
     header = CharField('header', max_length=256, null=False)
     # picture = BinaryField('picture', null=True)
     content = CharField('content', max_length=1028, null=False)
