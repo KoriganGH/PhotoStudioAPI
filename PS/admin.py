@@ -45,3 +45,4 @@ class UsersAdmin(admin.ModelAdmin):
 @admin.register(models.OrderPlaced)
 class UsersAdmin(admin.ModelAdmin):
     pass
+
