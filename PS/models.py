@@ -6,6 +6,13 @@ from django.contrib.auth.models import AbstractUser
 class Lab(Model):
     lab_name = CharField("lab_name", max_length=100, null=False)
 
+    def __str__(self):
+        return self.lab_name
+
+    class Meta:
+        verbose_name = 'Лаборатория'
+        verbose_name_plural = 'Лаборатории'
+
 
 class Role(Model):
     role_name = CharField("role", max_length=128, null=True)
@@ -14,22 +21,22 @@ class Role(Model):
         return self.role_name
 
     class Meta:
-        verbose_name = 'role_enum'
-        verbose_name_plural = 'role_enum'
+        verbose_name = 'Роль'
+        verbose_name_plural = 'Роли'
 
 
 class BasicUser(Model):
-    first_name = CharField("firstname", max_length=64, null=False)
-    surname = CharField("surname", max_length=64, null=True)
-    number = CharField("number", max_length=12, null=False)
-    email = CharField("email", max_length=64, null=False)
+    first_name = CharField(max_length=64, null=False)
+    surname = CharField(max_length=64, null=True)
+    number = CharField(max_length=12, null=False)
+    email = CharField(max_length=64, null=False)
     role = ForeignKey(Role, on_delete=CASCADE)
     lab = ForeignKey(Lab, on_delete=CASCADE)
-    telegram_id = CharField("telegram_id", max_length=64, null=True)
-    orders_count = IntegerField("orders_count", null=False)
-    permissions = JSONField("permissions", null=True)
-    availableToday = BooleanField('available_today', null=True)
-    registration_date = DateTimeField("reg_date", auto_now_add=True)
+    telegram_id = CharField(max_length=64, null=True)
+    orders_count = IntegerField(null=False)
+    permissions = JSONField(null=True)
+    availableToday = BooleanField(null=True)
+    registration_date = DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.surname)
@@ -40,7 +47,7 @@ class BasicUser(Model):
 
 
 class OrderStatus(Model):
-    status_name = CharField("status", max_length=128, null=True)
+    status_name = CharField(max_length=128, null=True)
 
     def __str__(self):
         return self.status_name
@@ -51,18 +58,21 @@ class OrderStatus(Model):
 
 
 class Order(Model):
-    creation_date = DateTimeField("reg_date", auto_now_add=True)
+    creation_date = DateTimeField(auto_now_add=True)
     lab = ForeignKey(Lab, on_delete=CASCADE)
-    order_name = CharField('order_name', max_length=128, null=False)
-    description = CharField('description', max_length=1024, null=True)
+    order_name = CharField(max_length=128, null=False)
+    description = CharField(max_length=1024, null=True)
     status = ForeignKey(OrderStatus, on_delete=CASCADE, default='paid')
     exec = ForeignKey(BasicUser, on_delete=CASCADE)
-    status = ForeignKey(OrderStatus, on_delete=CASCADE)
-    deadline = DateTimeField('deadline', null=True)
+    deadline = DateTimeField(null=True)
+
+    def __str__(self):
+        return self.order_name
 
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
+
 
 class CompanyOrderStatus(Model):
     status_name = CharField("status", max_length=128, null=True)
@@ -71,34 +81,64 @@ class CompanyOrderStatus(Model):
         return self.status_name
 
     class Meta:
-        verbose_name = 'company_order_status_enum'
-        verbose_name_plural = 'company_order_status_enum'
+        verbose_name = 'Статус заказа компании'
+        verbose_name_plural = 'Статусы заказов компании'
 
 
 class CompanyOrder(Model):
-    creation_date = DateTimeField("reg_date", auto_now_add=True)
-    order_name = CharField('order_name', max_length=128, null=False)
-    description = CharField('description', max_length=1024, null=True)
+    creation_date = DateTimeField(auto_now_add=True)
+    order_name = CharField(max_length=128, null=False)
+    description = CharField(max_length=1024, null=True)
     status = ForeignKey(CompanyOrderStatus, on_delete=CASCADE, default='created')
     lab = ForeignKey(Lab, on_delete=CASCADE)
-    exec = ForeignKey(BasicUser, on_delete=CASCADE, null=True)
-    order_creator = ForeignKey(BasicUser, on_delete=CASCADE)
+    exec = ForeignKey(BasicUser, on_delete=CASCADE, null=True, related_name='exec_of')
+    order_creator = ForeignKey(BasicUser, on_delete=CASCADE, related_name='orders_created_by')
+
+    def __str__(self):
+        return self.order_name
+
+    class Meta:
+        verbose_name = 'Заказ компании'
+        verbose_name_plural = 'Заказы компании'
+
 
 class Schedule(Model):
     date = DateTimeField('date')
     employee = ForeignKey(BasicUser, on_delete=CASCADE, related_name='days')
     lab = ForeignKey(Lab, on_delete=CASCADE)
 
+    def __str__(self):
+        return self.employee
+
+    class Meta:
+        verbose_name = 'Расписание'
+        verbose_name_plural = 'Расписания'
+
 
 class NewsType(Model):
-    type = CharField('news_type', max_length=128, null=True)
+    type = CharField(max_length=128, null=True)
+
+    def __str__(self):
+        return self.type
+
+    class Meta:
+        verbose_name = 'Тип новости'
+        verbose_name_plural = 'Типы новостей'
+
 
 class News(Model):
     news_type = ForeignKey(NewsType, on_delete=CASCADE)
-    header = CharField('header', max_length=256, null=False)
-    # picture = BinaryField('picture', null=True)
-    content = CharField('content', max_length=1028, null=False)
-    telegram_post = BooleanField('telegram_post', default=False)
-    post_date = DateTimeField('post_date', auto_now_add=True)
+    header = CharField(max_length=256, null=False)
+    picture = BinaryField(null=True)
+    content = CharField(max_length=1028, null=False)
+    telegram_post = BooleanField(default=False)
+    post_date = DateTimeField(auto_now_add=True)
     editor = ForeignKey(BasicUser, on_delete=CASCADE)
+
+    def __str__(self):
+        return self.header
+
+    class Meta:
+        verbose_name = 'Новость'
+        verbose_name_plural = 'Новости'
 

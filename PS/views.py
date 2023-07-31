@@ -17,7 +17,7 @@ def add_new_user(request):
     if request.method == 'POST':
         try:
             data = request.POST
-            new_user = BasicUser.objects.create(
+            BasicUser.objects.create(
                 first_name=data.get('first_name'),
                 surname=data.get('surname'),
                 number=data.get('number'),
@@ -28,15 +28,15 @@ def add_new_user(request):
                 orders_count=data.get('orders_count'),
                 permissions=data.get('permissions')
             )
-            return JsonResponse({'message': 'Пользователь успешно добавлен.', 'user_id': new_user.id})
+            return JsonResponse({'message': 'User was added'})
         except Role.DoesNotExist:
-            return JsonResponse({'error': 'Указанная роль не существует.'}, status=400)
+            return JsonResponse({'error': 'Role does not exist'}, status=400)
         except Lab.DoesNotExist:
-            return JsonResponse({'error': 'Указанная лаборатория не существует.'}, status=400)
+            return JsonResponse({'error': 'Lab does not exist'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
-        return JsonResponse({'error': 'Метод не разрешен.'}, status=405)
+        return JsonResponse({'error': 'Request method not allowed'}, status=405)
 
 
 @csrf_exempt
@@ -48,10 +48,11 @@ def delete_user(request):
             return HttpResponse("{status: 200}")
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'Пользователь не найден'}, status=404)
-
+            return JsonResponse({'error': 'User does not exist'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Request method not allowed'}, status=405)
 
 
 @csrf_exempt
@@ -61,7 +62,8 @@ def update_user_field(request):
             user_id = request.POST.get('id')
             user = get_object_or_404(BasicUser, id=user_id)
 
-            fields_to_update = ['first_name', 'surname', 'number', 'email', 'telegram_id', 'orders_count', 'permissions']
+            fields_to_update = ['first_name', 'surname', 'number', 'email', 'telegram_id', 'orders_count',
+                                'permissions']
             for field in fields_to_update:
                 value = request.POST.get(field)
                 if value:
@@ -80,52 +82,47 @@ def update_user_field(request):
                     user.lab = lab
 
             user.save()
-            return JsonResponse({'message': 'Пользователь успешно обновлен.'})
+            return JsonResponse({'message': 'User updated'})
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'Пользователь не найден.'}, status=404)
-
+            return JsonResponse({'error': 'User does not exist'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
     else:
-        return JsonResponse({'error': 'Method not allowed.'}, status=405)
-    
+        return JsonResponse({'error': 'Request method not allowed'}, status=405)
+
 
 @csrf_exempt
 def add_row_schedule(request):
     if request.method == 'POST':
         try:
             data = request.POST
-            new_row = Schedule.objects.create(
-                employee = BasicUser.objects.get(id = data.get('employee_id')),
+            Schedule.objects.create(
+                employee=BasicUser.objects.get(id=data.get('employee_id')),
                 lab=Lab.objects.get(lab_name=data.get('lab')),
-                date = datetime.strptime(data.get('date'), '%Y-%m-%d') 
+                date=datetime.strptime(data.get('date'), '%Y-%m-%d')
             )
             return JsonResponse({'message': 'Schedule updated'})
         except Lab.DoesNotExist:
-            return JsonResponse({'error': 'Lab does not exists'}, status=400)
+            return JsonResponse({'error': 'Lab does not exist'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
-        return JsonResponse({'error': 'Method not allowed.'}, status=405)
-        
+        return JsonResponse({'error': 'Request method not allowed'}, status=405)
+
 
 @csrf_exempt
-def get_user_by_lab_or_date(request):
+def get_user_by_lab_and_date(request):
     if request.method == 'POST':
         try:
             data = request.POST
-            if data.get('lab'):
-                x = BasicUser.objects.filter(lab = data.get('lab'))
-            elif data.get('date'):
-                x = BasicUser.days.all()
-
-            return JsonResponse(list(x.values()), safe=False)
+            if data.get('lab') and data.get('date'):
+                users = BasicUser.objects.filter(days__date=data.get('date'), lab=data.get('lab'))
+                return JsonResponse(list(users.values()), safe=False)
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'Пользователь не найден'}, status=404)
-
+            return JsonResponse({'error': 'User does not exist'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
+    else:
+        return JsonResponse({'error': 'Request method not allowed'}, status=405)

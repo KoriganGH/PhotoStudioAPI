@@ -33,10 +33,9 @@ import requests
 
 headers = {}
 session = requests.Session()
-resp = session.post('http://127.0.0.1:8000/get_user/', data={'lab':'1'})
+resp = session.post('http://127.0.0.1:8000/get_user/', data={'date': '2023-09-01', 'lab': '1'})
 
 print(resp.text)
-
 
 # headers = {}
 # session = requests.Session()
