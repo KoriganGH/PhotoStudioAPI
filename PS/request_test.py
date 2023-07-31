@@ -10,11 +10,11 @@ import requests
 #     'permissions': {'status': 1000},
 #     'orders_count': '2'
 # }
-
+#
 # headers = {}
 # session = requests.Session()
 # resp = session.post('http://127.0.0.1:8000/add_new_user/', data=params)
-
+#
 # print(resp)
 
 
@@ -33,12 +33,6 @@ import requests
 
 headers = {}
 session = requests.Session()
-resp = session.post('http://127.0.0.1:8000/get_user/', data={'date': '2023-09-01', 'lab': '1'})
+resp = session.post('http://127.0.0.1:8000/get_user/', data={'date': '2023-07-31', 'lab': '1'})
 
 print(resp.text)
-
-# headers = {}
-# session = requests.Session()
-# resp = session.post('http://127.0.0.1:8000/schedule_update/', data={'employee_id': '1', 'lab': 'lab1', 'date': '2023-09-03'})
-
-# print(resp.url)

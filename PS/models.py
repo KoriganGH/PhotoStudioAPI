@@ -1,4 +1,4 @@
-from django.db.models import Model, CASCADE
+from django.db.models import Model, CASCADE, DateField
 from django.db.models import CharField, ForeignKey, IntegerField, JSONField, DateTimeField, BooleanField, BinaryField
 from django.contrib.auth.models import AbstractUser
 
@@ -103,12 +103,12 @@ class CompanyOrder(Model):
 
 
 class Schedule(Model):
-    date = DateTimeField('date')
+    date = DateField()
     employee = ForeignKey(BasicUser, on_delete=CASCADE, related_name='days')
     lab = ForeignKey(Lab, on_delete=CASCADE)
 
-    def __str__(self):
-        return self.employee
+    # def __str__(self):
+    #     return self.employee
 
     class Meta:
         verbose_name = 'Расписание'
