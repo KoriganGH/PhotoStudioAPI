@@ -1,45 +1,87 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
-from PS.models import BasicUser, Role
+from PS.models import BasicUser, Role, Lab
 from django.views.decorators.csrf import csrf_exempt
 
 
-# Create your views here.
-
-def get_user(request):
-    age = request.GET.get("age", 0)
-    name = request.GET.get("name", "Undefined")
-    reviews = BasicUser.objects.all()
-    for i in reviews[0].__dict__.items():
-        print(i)
-    return HttpResponse(f"<h2>Имя: {name}  Возраст: {age}</h2>")
-
-
-@csrf_exempt
-def test(request):
-    print(request.method)
-    new_user = BasicUser()
-
-    new_user.first_name = request.POST.get('first_name')
-    new_user.surname = request.POST.get('surname')
-    new_user.email = request.POST.get('email')
-    new_user.number = request.POST.get('number')
-    new_user.role = Role.objects.get(id=1)
-    # new_user.role = Role.objects.filter(RoleName = request.POST.get('role'))[0]
-    new_user.lab = request.POST.get('lab')
-    new_user.permissions = {'sadas': 200}
-    new_user.orders_count = 0
-    new_user.save()
-    return HttpResponse("{status: 200}")
-
-
-def test2(request):
-    reviews = BasicUser.objects.all()
-    return reviews[0].login
-
-
-def basic_user_list(request):
+def get_all_users(request):
     users = BasicUser.objects.all()
     user_list = list(users.values())
 
-    return JsonResponse(user_list, safe=False)
+    return JsonResponse(user_list, safe=False, json_dumps_params={'ensure_ascii': False})
+
+
+@csrf_exempt
+def add_new_user(request):
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            new_user = BasicUser.objects.create(
+                first_name=data.get('first_name'),
+                surname=data.get('surname'),
+                number=data.get('number'),
+                email=data.get('email'),
+                role=Role.objects.get(role_name=data.get('role')),
+                lab=Lab.objects.get(lab_name=data.get('lab')),
+                telegram_id=data.get('telegram_id'),
+                orders_count=data.get('orders_count'),
+                permissions=data.get('permissions')
+            )
+            return JsonResponse({'message': 'Пользователь успешно добавлен.', 'user_id': new_user.id})
+        except Role.DoesNotExist:
+            return JsonResponse({'error': 'Указанная роль не существует.'}, status=400)
+        except Lab.DoesNotExist:
+            return JsonResponse({'error': 'Указанная лаборатория не существует.'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Метод не разрешен.'}, status=405)
+
+
+@csrf_exempt
+def delete_user(request):
+    if request.method == 'POST':
+        try:
+            user = get_object_or_404(BasicUser, id=request.POST.get('id'))
+            user.delete()
+            return HttpResponse("{status: 200}")
+
+        except BasicUser.DoesNotExist:
+            return JsonResponse({'error': 'Пользователь не найден'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def update_user_field(request):
+    try:
+        user_id = request.POST.get('id')
+        user = get_object_or_404(BasicUser, id=user_id)
+
+        fields_to_update = ['first_name', 'surname', 'number', 'email', 'telegram_id', 'orders_count', 'permissions']
+        for field in fields_to_update:
+            value = request.POST.get(field)
+            if value:
+                setattr(user, field, value)
+
+        role_name = request.POST.get('role')
+        if role_name:
+            role = Role.objects.get(role_name=role_name)
+            if role:
+                user.role = role
+
+        lab_name = request.POST.get('lab')
+        if lab_name:
+            lab = Lab.objects.get(lab_name=lab_name)
+            if lab:
+                user.lab = lab
+
+        user.save()
+        return JsonResponse({'message': 'Пользователь успешно обновлен.'})
+
+    except BasicUser.DoesNotExist:
+        return JsonResponse({'error': 'Пользователь не найден.'}, status=404)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

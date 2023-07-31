@@ -9,10 +9,10 @@ class Lab(Model):
 
 
 class Role(Model):
-    RoleName = CharField("role", max_length=128, null=True)
+    role_name = CharField("role", max_length=128, null=True)
 
     def __str__(self):
-        return self.RoleName
+        return self.role_name
 
     class Meta:
         verbose_name = 'role_enum'
