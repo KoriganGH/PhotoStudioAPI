@@ -24,7 +24,7 @@ class OrderStatusAdmin(admin.ModelAdmin):
 
 @admin.register(models.Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'order_name', 'status', 'exec', 'status', 'deadline']
+    list_display = ['id', 'order_name', 'status', 'exec', 'order_creator', 'deadline']
 
 
 @admin.register(models.CompanyOrderStatus)
@@ -34,12 +34,12 @@ class CompanyOrderStatusAdmin(admin.ModelAdmin):
 
 @admin.register(models.CompanyOrder)
 class CompanyOrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'order_name', 'status', 'exec', 'status']
+    list_display = ['id', 'order_name', 'status', 'exec', 'order_creator', 'deadline']
 
 
 @admin.register(models.Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ['lab', 'employee', 'date']
+    list_display = ['id', 'lab', 'employee', 'date']
 
 
 @admin.register(models.NewsType)

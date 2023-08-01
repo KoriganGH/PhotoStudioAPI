@@ -40,7 +40,52 @@ import requests
 #
 # print(resp)
 #
-session = requests.Session()
-resp = session.post('http://127.0.0.1:8000/orders/', data={'action': 'get_all'})
+# session = requests.Session()
+# resp = session.post('http://127.0.0.1:8000/orders/', data={'action': 'get_all', 'type': 'company'})
+#
+# print(resp.text)
 
-print(resp.text)
+# params = {
+#     'action': 'update',
+#     'type': 'company',
+#     'id': '1',
+#     'exec': '1',
+#     'order_name': 'sssss',
+#     'order_creator': '1',
+#     'description': 'dawdaw',
+#     'deadline': '2023-10-05',
+#     'lab': '1',
+#     'status': 'da2'
+# }
+#
+# session = requests.Session()
+# resp = session.post('http://127.0.0.1:8000/orders/', data=params)
+#
+# print(resp.text)
+#
+# params = {
+#     'action': 'add',
+#     'type': 'type1',
+#     'editor': '1',
+#     'header': 'dawdwd',
+#     'content': 'dawdaw',
+# }
+#
+# session = requests.Session()
+# resp = session.post('http://127.0.0.1:8000/news/', data=params)
+#
+# print(resp.text)
+
+# params = {
+#     'id': '1',
+#     'action': 'update',
+#     'type': 'type1',
+#     'editor': '1',
+#     'header': 'XXXXXXXX',
+#     'content': 'XXXXXXXXXX',
+# }
+#
+# session = requests.Session()
+# resp = session.post('http://127.0.0.1:8000/news/', data=params)
+#
+# print(resp.text)

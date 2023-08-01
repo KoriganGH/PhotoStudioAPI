@@ -62,8 +62,9 @@ class Order(Model):
     lab = ForeignKey(Lab, on_delete=CASCADE)
     order_name = CharField(max_length=128, null=False)
     description = CharField(max_length=1024, null=True)
-    status = ForeignKey(OrderStatus, on_delete=CASCADE, default='paid')
-    exec = ForeignKey(BasicUser, on_delete=CASCADE)
+    status = ForeignKey(OrderStatus, on_delete=CASCADE)
+    exec = ForeignKey(BasicUser, on_delete=CASCADE, null=True, related_name='exec_of')
+    order_creator = ForeignKey(BasicUser, on_delete=CASCADE, related_name='orders_created_by')
     deadline = DateTimeField(null=True)
 
     def __str__(self):
@@ -87,12 +88,13 @@ class CompanyOrderStatus(Model):
 
 class CompanyOrder(Model):
     creation_date = DateTimeField(auto_now_add=True)
+    lab = ForeignKey(Lab, on_delete=CASCADE)
     order_name = CharField(max_length=128, null=False)
     description = CharField(max_length=1024, null=True)
-    status = ForeignKey(CompanyOrderStatus, on_delete=CASCADE, default='created')
-    lab = ForeignKey(Lab, on_delete=CASCADE)
-    exec = ForeignKey(BasicUser, on_delete=CASCADE, null=True, related_name='exec_of')
-    order_creator = ForeignKey(BasicUser, on_delete=CASCADE, related_name='orders_created_by')
+    status = ForeignKey(CompanyOrderStatus, on_delete=CASCADE)
+    exec = ForeignKey(BasicUser, on_delete=CASCADE, null=True, related_name='company_exec_of')
+    order_creator = ForeignKey(BasicUser, on_delete=CASCADE, related_name='company_orders_created_by')
+    deadline = DateTimeField(null=True)
 
     def __str__(self):
         return self.order_name
@@ -131,7 +133,7 @@ class News(Model):
     header = CharField(max_length=256, null=False)
     picture = BinaryField(null=True)
     content = CharField(max_length=1028, null=False)
-    telegram_post = BooleanField(default=False)
+    telegram_post = BooleanField(null=True, default=False)
     post_date = DateTimeField(auto_now_add=True)
     editor = ForeignKey(BasicUser, on_delete=CASCADE)
 
@@ -141,4 +143,3 @@ class News(Model):
     class Meta:
         verbose_name = 'Новость'
         verbose_name_plural = 'Новости'
-
