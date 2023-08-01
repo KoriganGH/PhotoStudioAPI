@@ -14,7 +14,12 @@ class RoleAdmin(admin.ModelAdmin):
 
 @admin.register(models.BasicUser)
 class UsersAdmin(admin.ModelAdmin):
-    list_display = ['id', 'first_name', 'surname', 'number', 'email', 'role', 'lab', 'orders_count']
+    # fieldsets = (
+    #     ('User Information', {
+    #         'fields': ('first_name', 'last_name'),
+    #     }),)
+    list_display = ['id', 'first_name', 'last_name', 'number', 'email', 'orders_count']
+    #list_display = ['id', 'first_name', 'surname', 'number', 'email', 'role', 'lab', 'orders_count']
 
 
 @admin.register(models.OrderStatus)

@@ -1,3 +1,4 @@
+from django.contrib.auth.base_user import BaseUserManager
 from django.db.models import Model, CASCADE, DateField
 from django.db.models import CharField, ForeignKey, IntegerField, JSONField, DateTimeField, BooleanField, BinaryField
 from django.contrib.auth.models import AbstractUser
@@ -25,21 +26,48 @@ class Role(Model):
         verbose_name_plural = 'Роли'
 
 
-class BasicUser(Model):
+class CustomUserManager(BaseUserManager):
+    def create_user(self, username=None, password=None, lab=None, role=None, **extra_fields):
+        if not username:
+            raise ValueError('The Username field must be set')
+        if not password:
+            raise ValueError('The password field must be set')
+        if not lab:
+            raise ValueError('The Lab field must be set')
+        if not role:
+            raise ValueError('The Role field must be set')
+
+        user = self.model(username=username, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(username, password, **extra_fields)
+
+
+class BasicUser(AbstractUser):
     first_name = CharField(max_length=64, null=False)
-    surname = CharField(max_length=64, null=True)
     number = CharField(max_length=12, null=False)
     email = CharField(max_length=64, null=False)
     role = ForeignKey(Role, on_delete=CASCADE)
     lab = ForeignKey(Lab, on_delete=CASCADE)
     telegram_id = CharField(max_length=64, null=True)
-    orders_count = IntegerField(null=False)
+    orders_count = IntegerField(null=True)
     permissions = JSONField(null=True)
     availableToday = BooleanField(null=True)
     registration_date = DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return "{} {}".format(self.first_name, self.surname)
+        return "{} {}".format(self.first_name, self.last_name)
 
     class Meta:
         verbose_name = 'Пользователь'

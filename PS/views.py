@@ -1,3 +1,5 @@
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404
 from django.forms.models import model_to_dict
 from django.http import HttpResponse, JsonResponse
@@ -6,6 +8,7 @@ from PS.models import BasicUser, Role, Lab, Schedule, Order, OrderStatus, Compan
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from django.views import View
+from django.contrib.auth.decorators import login_required
 
 
 class UserView(View):
@@ -32,9 +35,12 @@ class UserView(View):
     def add_new_user(request):
         try:
             data = request.POST
-            BasicUser.objects.create(
+            print(data.get('password'))
+            BasicUser.objects.create_user(
+                username=data.get('username'),
+                password=data.get('password'),
                 first_name=data.get('first_name'),
-                surname=data.get('surname'),
+                last_name=data.get('last_name'),
                 number=data.get('number'),
                 email=data.get('email'),
                 role=Role.objects.get(role_name=data.get('role')),
@@ -440,3 +446,36 @@ class NewsView(View):
             return JsonResponse({'error': 'New does not exist'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework_simplejwt.tokens import RefreshToken
+# from rest_framework.permissions import IsAuthenticated
+#
+#
+# class LoginView(APIView):
+#     permission_classes = []
+#
+#     def post(self, request):
+#         username = request.data.get('username')
+#         password = request.data.get('password')
+#
+#         if username is None or password is None:
+#             return Response({'error': 'Please provide both username and password.'}, status=400)
+#
+#         user = authenticate(username=username, password=password)
+#
+#         if user is None:
+#             return Response({'error': 'Invalid credentials.'}, status=401)
+#
+#         refresh = RefreshToken.for_user(user)
+#         access_token = str(refresh.access_token)
+#
+#         return Response({'access_token': access_token})
+#
+#
+# class ProtectedView(APIView):
+#     permission_classes = [IsAuthenticated]
+#
+#     def get(self, request):
+#         return Response({'message': 'This is a protected view.'})

@@ -1,21 +1,23 @@
 import requests
 
-# params = {
-#     'action': 'add',
-#     'first_name': 'Pavel',
-#     'surname': 'Romantsov',
-#     'number': '+79064334014',
-#     'email': 'kata0880gmail.com',
-#     'role': 'Директор',
-#     'lab': 'lab1',
-#     'permissions': {'status': 1000},
-#     'orders_count': '2'
-# }
-#
-# session = requests.Session()
-# resp = session.post('http://127.0.0.1:8000/user/', data=params)
-#
-# print(resp)
+params = {
+    'action': 'add',
+    'username': 'blabla15',
+    'password': '1234',
+    'first_name': 'Padwavel',
+    'last_name': 'Romdwaantsov',
+    'number': '+79024334014',
+    'email': 'kata0220gmail.com',
+    'role': 'role1',
+    'lab': '1',
+    'permissions': {'status': 1000},
+    'orders_count': '2'
+}
+
+session = requests.Session()
+resp = session.post('http://127.0.0.1:8000/user/', data=params)
+
+print(resp.text)
 
 
 # session = requests.Session()
@@ -87,5 +89,17 @@ import requests
 #
 # session = requests.Session()
 # resp = session.post('http://127.0.0.1:8000/news/', data=params)
+#
+# print(resp.text)
+
+
+# session = requests.Session()
+# resp = session.post('http://127.0.0.1:8000/user/', data={'action': 'get_all'})
+#
+# print(resp.text)
+
+
+
+# resp = requests.get('http://127.0.0.1:8000/TEST/', headers={'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjkwOTExMDk1LCJpYXQiOjE2OTA5MTA3OTUsImp0aSI6IjQ4N2MxOTZiNTlhMjRkMzlhZTQyYjQ3ZmRlNGUzZjFkIiwidXNlcl9pZCI6MX0.yH_pD4pA_klQSCp_Z1oJqHbfcuNLltfovxh_dcy_FUI'})
 #
 # print(resp.text)
