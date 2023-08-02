@@ -3,7 +3,6 @@ from django.db.models import Model, CASCADE, DateField
 from django.db.models import CharField, ForeignKey, IntegerField, JSONField, DateTimeField, BooleanField, BinaryField
 from django.contrib.auth.models import AbstractUser
 
-
 class Lab(Model):
     lab_name = CharField("lab_name", max_length=100, null=False)
 

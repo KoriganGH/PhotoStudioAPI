@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Обновление данных пользователя</title>
+</head>
+<body>
+    <h1>Обновление данных пользователя</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ user.id }}">
+        <label for="first_name">Имя:</label>
+        <input type="text" name="first_name" value="{{ user.first_name }}"><br>
+
+        <label for="last_name">Фамилия:</label>
+        <input type="text" name="last_name" value="{{ user.last_name }}"><br>
+
+        <label for="number">Номер телефона:</label>
+        <input type="text" name="number" value="{{ user.number }}"><br>
+
+        <label for="email">Email:</label>
+        <input type="email" name="email" value="{{ user.email }}"><br>
+
+        <label for="telegram_id">Telegram ID:</label>
+        <input type="text" name="telegram_id" value="{{ user.telegram_id }}"><br>
+
+        <label for="orders_count">Количество заказов:</label>
+        <input type="number" name="orders_count" value="{{ user.orders_count }}"><br>
+
+        <label for="permissions">Права доступа:</label>
+        <input type="text" name="permissions" value="{{ user.permissions }}"><br>
+
+        <label for="role">Роль:</label>
+        <input type="text" name="role" value="{{ user.role.role_name }}"><br>
+
+        <label for="lab">ID лаборатории:</label>
+        <input type="number" name="lab" value="{{ user.lab.id }}"><br>
+
+        <input type="submit" value="Сохранить изменения">
+    </form>
+</body>
+</html>

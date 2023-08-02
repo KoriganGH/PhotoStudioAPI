@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from django.views import View
 from django.contrib.auth.decorators import login_required
+from .forms import UserForm, UpdateUserForm
 
 
 class UserView(View):
@@ -33,41 +34,33 @@ class UserView(View):
 
     @staticmethod
     def add_new_user(request):
-        try:
-            data = request.POST
-            print(data.get('password'))
-            BasicUser.objects.create_user(
-                username=data.get('username'),
-                password=data.get('password'),
-                first_name=data.get('first_name'),
-                last_name=data.get('last_name'),
-                number=data.get('number'),
-                email=data.get('email'),
-                role=Role.objects.get(role_name=data.get('role')),
-                lab=Lab.objects.get(id=data.get('lab')),
-                telegram_id=data.get('telegram_id'),
-                orders_count=data.get('orders_count'),
-                permissions=data.get('permissions')
-            )
-            return JsonResponse({'message': 'User was added'})
-        except Role.DoesNotExist:
-            return JsonResponse({'error': 'Role does not exist'}, status=400)
-        except Lab.DoesNotExist:
-            return JsonResponse({'error': 'Lab does not exist'}, status=400)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-
-    @staticmethod
-    def delete_user(request):
-        try:
-            user = get_object_or_404(BasicUser, id=request.POST.get('id'))
-            user.delete()
-            return HttpResponse("{status: 200}")
-
-        except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+        form = UserForm(request.POST)
+        if form.is_valid():
+            cleaned_data = form.cleaned_data
+            try:
+                BasicUser.objects.create_user(
+                    username=cleaned_data['username'],
+                    password=cleaned_data['password'],
+                    first_name=cleaned_data['first_name'],
+                    last_name=cleaned_data['last_name'],
+                    number=cleaned_data['number'],
+                    email=cleaned_data['email'],
+                    role=Role.objects.get(role_name=cleaned_data['role']),
+                    lab=Lab.objects.get(id=cleaned_data['lab']),
+                    telegram_id=cleaned_data['telegram_id'],
+                    orders_count=cleaned_data['orders_count'],
+                    permissions=cleaned_data['permissions']
+                )
+                return JsonResponse({'message': 'User was added'})
+            except Role.DoesNotExist:
+                return JsonResponse({'error': 'Role does not exist'}, status=400)
+            except Lab.DoesNotExist:
+                return JsonResponse({'error': 'Lab does not exist'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+        else:
+            form = UserForm()
+        return render(request, 'add_user.html', {'form': form})
 
     @staticmethod
     def update_user_field(request):
@@ -75,8 +68,8 @@ class UserView(View):
             user_id = request.POST.get('id')
             user = get_object_or_404(BasicUser, id=user_id)
 
-            fields_to_update = ['first_name', 'surname', 'number', 'email', 'telegram_id', 'orders_count',
-                                'permissions']
+            fields_to_update = ['first_name', 'last_name', 'number', 'email', 'telegram_id', 'orders_count',
+                                'permissions', 'username', 'password']
             for field in fields_to_update:
                 value = request.POST.get(field)
                 if value:
@@ -96,6 +89,18 @@ class UserView(View):
 
             user.save()
             return JsonResponse({'message': 'User updated'})
+
+        except BasicUser.DoesNotExist:
+            return JsonResponse({'error': 'User does not exist'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    @staticmethod
+    def delete_user(request):
+        try:
+            user = get_object_or_404(BasicUser, id=request.POST.get('id'))
+            user.delete()
+            return HttpResponse("{status: 200}")
 
         except BasicUser.DoesNotExist:
             return JsonResponse({'error': 'User does not exist'}, status=404)

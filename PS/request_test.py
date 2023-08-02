@@ -1,17 +1,19 @@
 import requests
 
 params = {
-    'action': 'add',
-    'username': 'blabla15',
-    'password': '1234',
-    'first_name': 'Padwavel',
-    'last_name': 'Romdwaantsov',
+    'action': 'update',
+    'id': '2',
+    'username': 'xxxxxx',
+    'first_name': 'xxxx',
+    'last_name': 'xxxx',
     'number': '+79024334014',
-    'email': 'kata0220gmail.com',
+    'email': 'kata@gmail.com',
     'role': 'role1',
     'lab': '1',
-    'permissions': {'status': 1000},
-    'orders_count': '2'
+    'permissions': 'dwadwa',
+    'orders_count': '2',
+    'telegram_id': '1',
+    'password':'123'
 }
 
 session = requests.Session()
