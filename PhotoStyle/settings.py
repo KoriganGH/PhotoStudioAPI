@@ -34,6 +34,8 @@ AUTH_USER_MODEL = 'PS.BasicUser'
 INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_yasg',
+    'rest_framework_swagger',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -136,3 +138,20 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,  # Настройка для использования аутентификации через токены, если используете
+    'JSON_EDITOR': True,  # Включение редактора JSON для полей схемы запросов и ответов
+    # Другие настройки, если требуются
+
+    'DEFAULT_INFO': 'your_project.api_info',  # Reference to your API info module
+    'SECURITY_DEFINITIONS': {
+        # Define your security definitions if required
+    },
+    # Other settings as needed
+}
+CSRF_COOKIE_NAME = "csrftoken"  # Или имя вашей CSRF-куки
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = None

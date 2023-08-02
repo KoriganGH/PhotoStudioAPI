@@ -32,6 +32,9 @@ class UserView(View):
         else:
             return JsonResponse({'error': 'Wrong action'}, status=400)
 
+    def get(self, request):
+        return self.get_all_users(request)
+
     @staticmethod
     def add_new_user(request):
         form = UserForm(request.POST)
@@ -452,35 +455,45 @@ class NewsView(View):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework_simplejwt.tokens import RefreshToken
-# from rest_framework.permissions import IsAuthenticated
-#
-#
-# class LoginView(APIView):
-#     permission_classes = []
-#
-#     def post(self, request):
-#         username = request.data.get('username')
-#         password = request.data.get('password')
-#
-#         if username is None or password is None:
-#             return Response({'error': 'Please provide both username and password.'}, status=400)
-#
-#         user = authenticate(username=username, password=password)
-#
-#         if user is None:
-#             return Response({'error': 'Invalid credentials.'}, status=401)
-#
-#         refresh = RefreshToken.for_user(user)
-#         access_token = str(refresh.access_token)
-#
-#         return Response({'access_token': access_token})
-#
-#
-# class ProtectedView(APIView):
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request):
-#         return Response({'message': 'This is a protected view.'})
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+class LoginView(APIView):
+    permission_classes = []
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING),
+                'password': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+            required=['username', 'password'],
+        )
+    )
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        if username is None or password is None:
+            return Response({'error': 'Please provide both username and password.'}, status=400)
+
+        user = authenticate(username=username, password=password)
+
+        if user is None:
+            return Response({'error': 'Invalid credentials.'}, status=401)
+
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        return Response({'access_token': access_token})
+
+
+class ProtectedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({'message': 'This is a protected view.'})

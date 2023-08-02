@@ -10,7 +10,7 @@ class UserForm(forms.Form):
     last_name = forms.CharField()
     number = forms.CharField()
     email = forms.EmailField()
-    role = forms.ModelChoiceField(queryset=Role.objects.all())
+    role = forms.CharField()
     lab = forms.IntegerField()
     telegram_id = forms.CharField()
     orders_count = forms.IntegerField()
