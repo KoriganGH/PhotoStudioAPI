@@ -21,17 +21,15 @@ schema_view = get_schema_view(
 )
 
 
-
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', UserView.as_view(), name='user-management'),
     path('schedule/', ScheduleView.as_view(), name='schedule-management'),
     path('orders/', OrderView.as_view(), name='orders-management'),
     path('news/', NewsView.as_view(), name='news-management'),
-    path('add/', UserView.add_new_user, name='add_user'),
     path('login/', LoginView.as_view(), name='login'),
     # path('update/<int:user_id>/', UserView.update_user_field, name='update_user')
     #path('api/', include('your_app.urls')),  # Замените 'your_app.urls' на URL-шаблоны вашего API
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc')
 ]

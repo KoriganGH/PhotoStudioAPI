@@ -11,14 +11,40 @@ from django.views import View
 from django.contrib.auth.decorators import login_required
 from .forms import UserForm, UpdateUserForm
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST, \
+    HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from .models import BasicUser, Role, Lab
+from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
-class UserView(View):
-    @csrf_exempt
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
 
+class UserView(APIView):
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'action': openapi.Schema(type=openapi.TYPE_STRING,
+                                         description='Action to perform. (add, delete, update, get_all, get_user)'),
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password'),
+                'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='First name'),
+                'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Last name'),
+                'number': openapi.Schema(type=openapi.TYPE_STRING, description='Number'),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email'),
+                'role': openapi.Schema(type=openapi.TYPE_STRING, description='Role name'),
+                'lab': openapi.Schema(type=openapi.TYPE_INTEGER, description='Lab ID'),
+                'telegram_id': openapi.Schema(type=openapi.TYPE_STRING, description='Telegram ID'),
+                'orders_count': openapi.Schema(type=openapi.TYPE_INTEGER, description='Orders count'),
+                'permissions': openapi.Schema(type=openapi.TYPE_STRING, description='Permissions'),
+            }
+        )
+    )
     def post(self, request):
-        action = request.POST.get('action')
+        action = request.data.get('action')
         if action == 'add':
             return self.add_new_user(request)
         elif action == 'delete':
@@ -30,108 +56,138 @@ class UserView(View):
         elif action == 'get_user':
             return self.get_user_by_lab_and_date(request)
         else:
-            return JsonResponse({'error': 'Wrong action'}, status=400)
+            return Response({'error': 'Неверное действие'}, status=HTTP_400_BAD_REQUEST)
 
-    def get(self, request):
-        return self.get_all_users(request)
-
-    @staticmethod
-    def add_new_user(request):
-        form = UserForm(request.POST)
-        if form.is_valid():
-            cleaned_data = form.cleaned_data
-            try:
-                BasicUser.objects.create_user(
-                    username=cleaned_data['username'],
-                    password=cleaned_data['password'],
-                    first_name=cleaned_data['first_name'],
-                    last_name=cleaned_data['last_name'],
-                    number=cleaned_data['number'],
-                    email=cleaned_data['email'],
-                    role=Role.objects.get(role_name=cleaned_data['role']),
-                    lab=Lab.objects.get(id=cleaned_data['lab']),
-                    telegram_id=cleaned_data['telegram_id'],
-                    orders_count=cleaned_data['orders_count'],
-                    permissions=cleaned_data['permissions']
-                )
-                return JsonResponse({'message': 'User was added'})
-            except Role.DoesNotExist:
-                return JsonResponse({'error': 'Role does not exist'}, status=400)
-            except Lab.DoesNotExist:
-                return JsonResponse({'error': 'Lab does not exist'}, status=400)
-            except Exception as e:
-                return JsonResponse({'error': str(e)}, status=500)
-        else:
-            form = UserForm()
-        return render(request, 'add_user.html', {'form': form})
-
-    @staticmethod
-    def update_user_field(request):
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username'),
+            'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password'),
+            'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='First name'),
+            'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Last name'),
+            'number': openapi.Schema(type=openapi.TYPE_STRING, description='Number'),
+            'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email'),
+            'role': openapi.Schema(type=openapi.TYPE_STRING, description='Role name'),
+            'lab': openapi.Schema(type=openapi.TYPE_INTEGER, description='Lab ID'),
+            'telegram_id': openapi.Schema(type=openapi.TYPE_STRING, description='Telegram ID'),
+            'orders_count': openapi.Schema(type=openapi.TYPE_INTEGER, description='Orders count'),
+            'permissions': openapi.Schema(type=openapi.TYPE_STRING, description='Permissions'),
+        }
+    ))
+    def add_new_user(self, request):
         try:
-            user_id = request.POST.get('id')
+            data = request.data
+            BasicUser.objects.create_user(
+                username=data.get('username'),
+                password=data.get('password'),
+                first_name=data.get('first_name'),
+                last_name=data.get('last_name'),
+                number=data.get('number'),
+                email=data.get('email'),
+                role=Role.objects.get(role_name=data.get('role')),
+                lab=Lab.objects.get(id=data.get('lab')),
+                telegram_id=data.get('telegram_id'),
+                orders_count=data.get('orders_count'),
+                permissions=data.get('permissions')
+            )
+            return Response({'message': 'User was added'}, status=HTTP_201_CREATED)
+        except Role.DoesNotExist:
+            return Response({'error': 'Role does not exist'}, status=HTTP_400_BAD_REQUEST)
+        except Lab.DoesNotExist:
+            return Response({'error': 'Lab does not exist'}, status=HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='User ID'),
+            # Add other properties as needed for updating specific fields
+        }
+    ))
+    def update_user_field(self, request):
+        try:
+            user_id = request.data.get('id')
             user = get_object_or_404(BasicUser, id=user_id)
 
             fields_to_update = ['first_name', 'last_name', 'number', 'email', 'telegram_id', 'orders_count',
                                 'permissions', 'username', 'password']
             for field in fields_to_update:
-                value = request.POST.get(field)
+                value = request.data.get(field)
                 if value:
                     setattr(user, field, value)
 
-            role_name = request.POST.get('role')
+            role_name = request.data.get('role')
             if role_name:
-                role = Role.objects.get(role_name=role_name)
-                if role:
+                try:
+                    role = Role.objects.get(role_name=role_name)
                     user.role = role
+                except Role.DoesNotExist:
+                    return Response({'error': 'Role does not exist'}, status=HTTP_400_BAD_REQUEST)
 
-            lab_id = request.POST.get('lab')
+            lab_id = request.data.get('lab')
             if lab_id:
-                lab = Lab.objects.get(id=lab_id)
-                if lab:
+                try:
+                    lab = Lab.objects.get(id=lab_id)
                     user.lab = lab
+                except Lab.DoesNotExist:
+                    return Response({'error': 'Lab does not exist'}, status=HTTP_400_BAD_REQUEST)
 
             user.save()
-            return JsonResponse({'message': 'User updated'})
+            return Response({'message': 'User updated'}, status=HTTP_200_OK)
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+            return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @staticmethod
-    def delete_user(request):
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='User ID'),
+        }
+    ))
+    def delete_user(self, request):
         try:
-            user = get_object_or_404(BasicUser, id=request.POST.get('id'))
+            user_id = request.data.get('id')
+            user = get_object_or_404(BasicUser, id=user_id)
             user.delete()
-            return HttpResponse("{status: 200}")
+            return Response(status=HTTP_204_NO_CONTENT)
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+            return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @staticmethod
-    def get_all_users(request):
+    def get_all_users(self, request):
         users = BasicUser.objects.all()
         user_list = list(users.values())
+        return Response(user_list)
 
-        return JsonResponse(user_list, safe=False, json_dumps_params={'ensure_ascii': False})
-
-    @staticmethod
-    def get_user_by_lab_and_date(request):
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'lab': openapi.Schema(type=openapi.TYPE_INTEGER, description='Lab ID'),
+            'date': openapi.Schema(type=openapi.TYPE_STRING, description='Date'),
+        }
+    ))
+    def get_user_by_lab_and_date(self, request):
         try:
-            data = request.POST
-            if data.get('lab') and data.get('date'):
-                users = BasicUser.objects.filter(days__date=data.get('date'), lab=data.get('lab'))
-                return JsonResponse(list(users.values()), safe=False)
+            lab_id = request.data.get('lab')
+            date = request.data.get('date')
+
+            if lab_id and date:
+                users = BasicUser.objects.filter(days__date=date, lab=lab_id)
+                user_list = list(users.values())
+                return Response(user_list, status=HTTP_200_OK)
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+            return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ScheduleView(View):
+class ScheduleView(APIView):
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
@@ -149,7 +205,7 @@ class ScheduleView(View):
         elif action == 'get_row':
             return self.get_row_by_id(request)
         else:
-            return JsonResponse({'error': 'Wrong action'}, status=400)
+            return Response({'error': 'Wrong action'}, status=400)
 
     @staticmethod
     def add_row_schedule(request):
@@ -160,11 +216,11 @@ class ScheduleView(View):
                 lab=Lab.objects.get(id=data.get('lab')),
                 date=datetime.strptime(data.get('date'), '%Y-%m-%d')
             )
-            return JsonResponse({'message': 'Row was added'})
+            return Response({'message': 'Row was added'})
         except Lab.DoesNotExist:
-            return JsonResponse({'error': 'Lab does not exist'}, status=400)
+            return Response({'error': 'Lab does not exist'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     @staticmethod
     def delete_row_schedule(request):
@@ -174,9 +230,9 @@ class ScheduleView(View):
             return HttpResponse("{status: 200}")
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'Row does not exist'}, status=404)
+            return Response({'error': 'Row does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     @staticmethod
     def update_row_schedule(request):
@@ -197,18 +253,18 @@ class ScheduleView(View):
                 if lab:
                     row.lab = lab
             row.save()
-            return JsonResponse({'message': 'Row updated'})
+            return Response({'message': 'Row updated'})
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+            return Response({'error': 'User does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     @staticmethod
     def get_all_rows(request):
         rows = Schedule.objects.all()
         rows_list = list(rows.values())
 
-        return JsonResponse(rows_list, safe=False, json_dumps_params={'ensure_ascii': False})
+        return Response(rows_list)
 
     @staticmethod
     def get_row_by_id(request):
@@ -221,12 +277,12 @@ class ScheduleView(View):
                 return JsonResponse(row_dict, safe=False)
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'Row does not exist'}, status=404)
+            return Response({'error': 'Row does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
 
-class OrderView(View):
+class OrderView(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.model = None
@@ -257,7 +313,7 @@ class OrderView(View):
         elif action == 'get_order':
             return self.get_order_by_id(request)
         else:
-            return JsonResponse({'error': 'Wrong action'}, status=400)
+            return Response({'error': 'Wrong action'}, status=400)
 
     def add_order(self, request):
         try:
@@ -271,24 +327,24 @@ class OrderView(View):
                 order_creator=BasicUser.objects.get(id=data.get('order_creator')),
                 deadline=data.get('deadline')
             )
-            return JsonResponse({'message': 'Order was added'})
+            return Response({'message': 'Order was added'})
         except Lab.DoesNotExist:
-            return JsonResponse({'error': 'Lab does not exist'}, status=400)
+            return Response({'error': 'Lab does not exist'}, status=400)
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=400)
+            return Response({'error': 'User does not exist'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     def delete_order(self, request):
         try:
             order = get_object_or_404(self.model, id=request.POST.get('id'))
             order.delete()
-            return HttpResponse("{status: 200}")
+            return Response("{status: 200}")
 
         except self.model.DoesNotExist:
-            return JsonResponse({'error': 'Order does not exist'}, status=404)
+            return Response({'error': 'Order does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     def update_order(self, request):
         try:
@@ -321,21 +377,21 @@ class OrderView(View):
                 if status:
                     order.status = status
             order.save()
-            return JsonResponse({'message': 'Order updated'})
+            return Response({'message': 'Order updated'})
         except self.model.DoesNotExist:
-            return JsonResponse({'error': 'Order does not exist'}, status=404)
+            return Response({'error': 'Order does not exist'}, status=404)
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+            return Response({'error': 'User does not exist'}, status=404)
         except Lab.DoesNotExist:
-            return JsonResponse({'error': 'Lab does not exist'}, status=400)
+            return Response({'error': 'Lab does not exist'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     def get_all_orders(self, request):
         orders = self.model.objects.all()
         orders_list = list(orders.values())
 
-        return JsonResponse(orders_list, safe=False, json_dumps_params={'ensure_ascii': False})
+        return Response(orders_list)
 
     def get_order_by_id(self, request):
         try:
@@ -344,15 +400,15 @@ class OrderView(View):
             if order_id:
                 order = self.model.objects.get(id=order_id)
                 order_dict = model_to_dict(order)
-                return JsonResponse(order_dict, safe=False, json_dumps_params={'ensure_ascii': False})
+                return Response(order_dict)
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'Order does not exist'}, status=404)
+            return Response({'error': 'Order does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
 
-class NewsView(View):
+class NewsView(APIView):
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
@@ -370,7 +426,7 @@ class NewsView(View):
         elif action == 'get_new':
             return self.get_new_by_id(request)
         else:
-            return JsonResponse({'error': 'Wrong action'}, status=400)
+            return Response({'error': 'Wrong action'}, status=400)
 
     @staticmethod
     def add_new(request):
@@ -384,25 +440,25 @@ class NewsView(View):
                 telegram_post=data.get('tg_post'),
                 editor=BasicUser.objects.get(id=data.get('editor')),
             )
-            return JsonResponse({'message': 'New was added'})
+            return Response({'message': 'New was added'})
         except NewsType.DoesNotExist:
-            return JsonResponse({'error': 'NewsType does not exist'}, status=400)
+            return Response({'error': 'NewsType does not exist'}, status=400)
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'Editor does not exist'}, status=400)
+            return Response({'error': 'Editor does not exist'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     @staticmethod
     def delete_new(request):
         try:
             row = get_object_or_404(News, id=request.POST.get('id'))
             row.delete()
-            return HttpResponse("{status: 200}")
+            return Response("{status: 200}")
 
         except BasicUser.DoesNotExist:
-            return JsonResponse({'error': 'New does not exist'}, status=404)
+            return Response({'error': 'New does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     @staticmethod
     def update_new(request):
@@ -427,18 +483,18 @@ class NewsView(View):
                 if user:
                     new.employee = user
             new.save()
-            return JsonResponse({'message': 'New updated'})
+            return Response({'message': 'New updated'})
         except News.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+            return Response({'error': 'User does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
 
     @staticmethod
     def get_all_news(request):
         news = News.objects.all()
         news_list = list(news.values())
 
-        return JsonResponse(news_list, safe=False, json_dumps_params={'ensure_ascii': False})
+        return Response(news_list)
 
     @staticmethod
     def get_new_by_id(request):
@@ -448,12 +504,13 @@ class NewsView(View):
             if new_id:
                 new = News.objects.get(id=new_id)
                 new_dict = model_to_dict(new)
-                return JsonResponse(new_dict, safe=False)
+                return Response(new_dict)
 
         except News.DoesNotExist:
-            return JsonResponse({'error': 'New does not exist'}, status=404)
+            return Response({'error': 'New does not exist'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=500)
+
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -461,6 +518,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+
+
 class LoginView(APIView):
     permission_classes = []
 
