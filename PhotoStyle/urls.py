@@ -1,35 +1,26 @@
-from django.contrib import admin
-from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 
-from PS import api_info
-from PS.views import UserView, ScheduleView, OrderView, NewsView, LoginView
+from PS.views import *
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-
-from django.urls import path
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-
-schema_view = get_schema_view(
-    api_info.api_info,
-    public=True,
-    permission_classes=(permissions.AllowAny,),
-)
-
+from .yasg import urlpatterns as doc_urls
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('user/', UserView.as_view(), name='user-management'),
+    path('admin', admin.site.urls),
+    path('user/create', UserCreateView.as_view(), name='user_create'),
+    path('user/<int:pk>/', UserDetailView.as_view(), name='user'),
+    path('user/list', UserListView.as_view(), name='user_list'),
+    path('user/lab_list', UserLabListView.as_view(), name='user_lablist'),
+    path('user/delete/<int:pk>/', UserDeleteView.as_view(), name='user_delete'),
+    path('user/update/<int:pk>/', UserUpdateView.as_view(), name='user_update'),
     path('schedule/', ScheduleView.as_view(), name='schedule-management'),
     path('orders/', OrderView.as_view(), name='orders-management'),
     path('news/', NewsView.as_view(), name='news-management'),
     path('login/', LoginView.as_view(), name='login'),
-    # path('update/<int:user_id>/', UserView.update_user_field, name='update_user')
-    #path('api/', include('your_app.urls')),  # Замените 'your_app.urls' на URL-шаблоны вашего API
-    path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc')
 ]
+
+urlpatterns += doc_urls
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

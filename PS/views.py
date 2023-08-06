@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404
 from django.forms.models import model_to_dict
 from django.http import HttpResponse, JsonResponse
+from rest_framework import generics
 from PS.models import BasicUser, Role, Lab, Schedule, Order, OrderStatus, CompanyOrder, CompanyOrderStatus, News, \
     NewsType
 from django.views.decorators.csrf import csrf_exempt
@@ -10,7 +11,6 @@ from datetime import datetime
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from .forms import UserForm, UpdateUserForm
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST, \
@@ -19,172 +19,73 @@ from .models import BasicUser, Role, Lab
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from .serializers import UserListSerializer, UserDetailSerializer, UserCreateSerializer, UserUpdateSerializer, \
+    UserLabListSerializer
 
 
-class UserView(APIView):
+class UserListView(generics.ListAPIView):
+    """Вывод списка пользователей"""
 
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'action': openapi.Schema(type=openapi.TYPE_STRING,
-                                         description='Action to perform. (add, delete, update, get_all, get_user)'),
-                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username'),
-                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password'),
-                'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='First name'),
-                'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Last name'),
-                'number': openapi.Schema(type=openapi.TYPE_STRING, description='Number'),
-                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email'),
-                'role': openapi.Schema(type=openapi.TYPE_STRING, description='Role name'),
-                'lab': openapi.Schema(type=openapi.TYPE_INTEGER, description='Lab ID'),
-                'telegram_id': openapi.Schema(type=openapi.TYPE_STRING, description='Telegram ID'),
-                'orders_count': openapi.Schema(type=openapi.TYPE_INTEGER, description='Orders count'),
-                'permissions': openapi.Schema(type=openapi.TYPE_STRING, description='Permissions'),
-            }
-        )
-    )
-    def post(self, request):
-        action = request.data.get('action')
-        if action == 'add':
-            return self.add_new_user(request)
-        elif action == 'delete':
-            return self.delete_user(request)
-        elif action == 'update':
-            return self.update_user_field(request)
-        elif action == 'get_all':
-            return self.get_all_users(request)
-        elif action == 'get_user':
-            return self.get_user_by_lab_and_date(request)
-        else:
-            return Response({'error': 'Неверное действие'}, status=HTTP_400_BAD_REQUEST)
+    queryset = BasicUser.objects.all()
+    serializer_class = UserListSerializer
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username'),
-            'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password'),
-            'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='First name'),
-            'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Last name'),
-            'number': openapi.Schema(type=openapi.TYPE_STRING, description='Number'),
-            'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email'),
-            'role': openapi.Schema(type=openapi.TYPE_STRING, description='Role name'),
-            'lab': openapi.Schema(type=openapi.TYPE_INTEGER, description='Lab ID'),
-            'telegram_id': openapi.Schema(type=openapi.TYPE_STRING, description='Telegram ID'),
-            'orders_count': openapi.Schema(type=openapi.TYPE_INTEGER, description='Orders count'),
-            'permissions': openapi.Schema(type=openapi.TYPE_STRING, description='Permissions'),
-        }
-    ))
-    def add_new_user(self, request):
-        try:
-            data = request.data
-            BasicUser.objects.create_user(
-                username=data.get('username'),
-                password=data.get('password'),
-                first_name=data.get('first_name'),
-                last_name=data.get('last_name'),
-                number=data.get('number'),
-                email=data.get('email'),
-                role=Role.objects.get(role_name=data.get('role')),
-                lab=Lab.objects.get(id=data.get('lab')),
-                telegram_id=data.get('telegram_id'),
-                orders_count=data.get('orders_count'),
-                permissions=data.get('permissions')
-            )
-            return Response({'message': 'User was added'}, status=HTTP_201_CREATED)
-        except Role.DoesNotExist:
-            return Response({'error': 'Role does not exist'}, status=HTTP_400_BAD_REQUEST)
-        except Lab.DoesNotExist:
-            return Response({'error': 'Lab does not exist'}, status=HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='User ID'),
-            # Add other properties as needed for updating specific fields
-        }
-    ))
-    def update_user_field(self, request):
-        try:
-            user_id = request.data.get('id')
-            user = get_object_or_404(BasicUser, id=user_id)
+class UserDetailView(generics.RetrieveAPIView):
+    """Вывод пользователя"""
 
-            fields_to_update = ['first_name', 'last_name', 'number', 'email', 'telegram_id', 'orders_count',
-                                'permissions', 'username', 'password']
-            for field in fields_to_update:
-                value = request.data.get(field)
-                if value:
-                    setattr(user, field, value)
+    queryset = BasicUser.objects.all()
+    serializer_class = UserDetailSerializer
 
-            role_name = request.data.get('role')
-            if role_name:
-                try:
-                    role = Role.objects.get(role_name=role_name)
-                    user.role = role
-                except Role.DoesNotExist:
-                    return Response({'error': 'Role does not exist'}, status=HTTP_400_BAD_REQUEST)
 
-            lab_id = request.data.get('lab')
-            if lab_id:
-                try:
-                    lab = Lab.objects.get(id=lab_id)
-                    user.lab = lab
-                except Lab.DoesNotExist:
-                    return Response({'error': 'Lab does not exist'}, status=HTTP_400_BAD_REQUEST)
+class UserCreateView(generics.CreateAPIView):
+    """Создание пользователя"""
 
-            user.save()
-            return Response({'message': 'User updated'}, status=HTTP_200_OK)
+    serializer_class = UserCreateSerializer
 
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='User ID'),
-        }
-    ))
-    def delete_user(self, request):
-        try:
-            user_id = request.data.get('id')
-            user = get_object_or_404(BasicUser, id=user_id)
-            user.delete()
-            return Response(status=HTTP_204_NO_CONTENT)
+class UserUpdateView(generics.UpdateAPIView):
+    """Изменение пользователя"""
 
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+    queryset = BasicUser.objects.all()
+    serializer_class = UserUpdateSerializer
 
-    def get_all_users(self, request):
-        users = BasicUser.objects.all()
-        user_list = list(users.values())
-        return Response(user_list)
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            'lab': openapi.Schema(type=openapi.TYPE_INTEGER, description='Lab ID'),
-            'date': openapi.Schema(type=openapi.TYPE_STRING, description='Date'),
-        }
-    ))
-    def get_user_by_lab_and_date(self, request):
-        try:
-            lab_id = request.data.get('lab')
-            date = request.data.get('date')
+class UserDeleteView(generics.DestroyAPIView):
+    """Удаление пользователя"""
 
-            if lab_id and date:
-                users = BasicUser.objects.filter(days__date=date, lab=lab_id)
-                user_list = list(users.values())
-                return Response(user_list, status=HTTP_200_OK)
+    queryset = BasicUser.objects.all()
+    serializer_class = UserUpdateSerializer
 
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
+
+# class UserLabListView(generics.ListAPIView):
+#     """Вывод списка пользователей по дате и лабе"""
+#
+#     serializer_class = UserLabListSerializer
+#
+#     def get_queryset(self):
+#         lab_id = self.request.data.get('lab')
+#         date = self.request.data.get('date')
+#
+#         users = BasicUser.objects.filter(days__date=date, lab=lab_id)
+#         return users
+
+
+# class UserDetailView(APIView):
+#     @staticmethod
+#     def get(request):
+#         try:
+#             lab_id = request.data.get('lab')
+#             date = request.data.get('date')
+#
+#             if lab_id and date:
+#                 users = BasicUser.objects.filter(days__date=date, lab=lab_id)
+#                 user_list = list(users.values())
+#                 return Response(user_list, status=HTTP_200_OK)
+#
+#         except BasicUser.DoesNotExist:
+#             return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ScheduleView(APIView):

@@ -1,8 +1,7 @@
 import requests
 
 params = {
-    'action': 'add',
-    'username': 'xxxxxx3',
+    'username': 'xxxxxx34',
     'first_name': 'xxxx',
     'last_name': 'xxxx',
     'number': '+79024334014',
@@ -16,7 +15,7 @@ params = {
 }
 
 session = requests.Session()
-resp = session.post('http://127.0.0.1:8000/user/', data=params)
+resp = session.post('http://127.0.0.1:8000/user/create/', data=params)
 
 print(resp.text)
 
