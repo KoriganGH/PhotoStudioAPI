@@ -6,18 +6,29 @@ from django.contrib import admin
 from django.urls import path, include
 from .yasg import urlpatterns as doc_urls
 
+
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'users', UserViewSet)
+router.register(r'schedule', ScheduleViewSet)
+router.register(r'orders', OrderViewSet)
+router.register(r'company_orders', CompanyOrderViewSet)
+router.register(r'news', NewsViewSet)
+
 urlpatterns = [
     path('admin', admin.site.urls),
-    path('user/create', UserCreateView.as_view(), name='user_create'),
-    path('user/<int:pk>/', UserDetailView.as_view(), name='user'),
-    path('user/list', UserListView.as_view(), name='user_list'),
-    path('user/lab_list', UserLabListView.as_view(), name='user_lablist'),
-    path('user/delete/<int:pk>/', UserDeleteView.as_view(), name='user_delete'),
-    path('user/update/<int:pk>/', UserUpdateView.as_view(), name='user_update'),
-    path('schedule/', ScheduleView.as_view(), name='schedule-management'),
-    path('orders/', OrderView.as_view(), name='orders-management'),
-    path('news/', NewsView.as_view(), name='news-management'),
+    # path('user/create', UserCreateView.as_view(), name='user_create'),
+    # path('user/<int:pk>/', UserDetailView.as_view(), name='user'),
+    # path('user/list', UserListView.as_view(), name='user_list'),
+    # path('user/lab_list', UserLabListView.as_view(), name='user_lablist'),
+    # path('user/delete/<int:pk>/', UserDeleteView.as_view(), name='user_delete'),
+    # path('user/update/<int:pk>/', UserUpdateView.as_view(), name='user_update'),
+    # path('schedule/', ScheduleView.as_view(), name='schedule-management'),
+    # path('orders/', OrderView.as_view(), name='orders-management'),
+    # path('news/', NewsView.as_view(), name='news-management'),
     path('login/', LoginView.as_view(), name='login'),
+    path('api/', include(router.urls))
 ]
 
 urlpatterns += doc_urls

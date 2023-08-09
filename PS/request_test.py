@@ -1,17 +1,14 @@
 import requests
 
 params = {
-    'username': 'xxxxxx34',
-    'first_name': 'xxxx',
-    'last_name': 'xxxx',
-    'number': '+79024334014',
-    'email': 'kata@gmail.com',
-    'role': 'role1',
-    'lab': '1',
-    'permissions': 'dwadwa',
-    'orders_count': '2',
-    'telegram_id': '1',
-    'password': '123'
+  "username": "xxxxxx334",
+  "first_name": "xxxx",
+  "last_name": "xxxx",
+  "number": "+79024334014",
+  "email": "kata@gmail.com",
+  "role": "1",
+  "lab": "1",
+  "password": "1234"
 }
 
 session = requests.Session()

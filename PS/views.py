@@ -4,421 +4,258 @@ from django.shortcuts import render, get_object_or_404
 from django.forms.models import model_to_dict
 from django.http import HttpResponse, JsonResponse
 from rest_framework import generics
+from rest_framework.decorators import action
 from PS.models import BasicUser, Role, Lab, Schedule, Order, OrderStatus, CompanyOrder, CompanyOrderStatus, News, \
     NewsType
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
-from django.views import View
 from django.contrib.auth.decorators import login_required
-from .forms import UserForm, UpdateUserForm
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST, \
     HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
-from .models import BasicUser, Role, Lab
-from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from .serializers import UserListSerializer, UserDetailSerializer, UserCreateSerializer, UserUpdateSerializer, \
-    UserLabListSerializer
+from .serializers import *
+from rest_framework import viewsets
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 
-class UserListView(generics.ListAPIView):
-    """Вывод списка пользователей"""
+class UserViewSet(viewsets.ModelViewSet):
+    """
+        Operations with users.
 
-    queryset = BasicUser.objects.all()
-    serializer_class = UserListSerializer
+        This viewset provides CRUD operations for managing users.
 
+        retrieve:
+        Retrieve a user instance.
 
-class UserDetailView(generics.RetrieveAPIView):
-    """Вывод пользователя"""
+        list:
+        Retrieve a list of users.
+
+        create:
+        Create a new user instance.
+
+        update:
+        Update a user instance.
+
+        partial_update:
+        Partially update a user instance.
+
+        destroy:
+        Delete a user instance.
+
+        schedule_filter:
+        Filter users by schedule date and lab.
+    """
 
     queryset = BasicUser.objects.all()
     serializer_class = UserDetailSerializer
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UserListSerializer
+        elif self.action == 'create':
+            return UserCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserUpdateSerializer
+        elif self.action in ['retrieve', 'destroy']:
+            return UserDetailSerializer
+        return super().get_serializer_class()
 
-class UserCreateView(generics.CreateAPIView):
-    """Создание пользователя"""
+    @swagger_auto_schema(
+        method='get',
+        manual_parameters=[
+            openapi.Parameter('date', openapi.IN_QUERY, description="The date in the schedule.",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('lab', openapi.IN_QUERY, description="The lab name.", type=openapi.TYPE_STRING),
+        ],
+        responses={HTTP_200_OK: UserDetailSerializer(many=True)},
+    )
+    @action(detail=False, methods=['get'], url_path='schedule-filter')
+    def schedule_filter(self, request):
+        """
+            Filter users by schedule date and lab.
 
-    serializer_class = UserCreateSerializer
+            This endpoint allows filtering users based on their schedule date and lab.
 
+            Parameters:
+            - date (str): The date in the schedule.
+            - lab (str): The lab name.
 
-class UserUpdateView(generics.UpdateAPIView):
-    """Изменение пользователя"""
+            Example: /api/users/schedule-filter/?date=2023-08-09&lab=LabA
+        """
+        date = self.request.query_params.get('date', None)
+        lab = self.request.query_params.get('lab', None)
 
-    queryset = BasicUser.objects.all()
-    serializer_class = UserUpdateSerializer
-
-
-class UserDeleteView(generics.DestroyAPIView):
-    """Удаление пользователя"""
-
-    queryset = BasicUser.objects.all()
-    serializer_class = UserUpdateSerializer
-
-
-# class UserLabListView(generics.ListAPIView):
-#     """Вывод списка пользователей по дате и лабе"""
-#
-#     serializer_class = UserLabListSerializer
-#
-#     def get_queryset(self):
-#         lab_id = self.request.data.get('lab')
-#         date = self.request.data.get('date')
-#
-#         users = BasicUser.objects.filter(days__date=date, lab=lab_id)
-#         return users
-
-
-# class UserDetailView(APIView):
-#     @staticmethod
-#     def get(request):
-#         try:
-#             lab_id = request.data.get('lab')
-#             date = request.data.get('date')
-#
-#             if lab_id and date:
-#                 users = BasicUser.objects.filter(days__date=date, lab=lab_id)
-#                 user_list = list(users.values())
-#                 return Response(user_list, status=HTTP_200_OK)
-#
-#         except BasicUser.DoesNotExist:
-#             return Response({'error': 'User does not exist'}, status=HTTP_404_NOT_FOUND)
-#         except Exception as e:
-#             return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class ScheduleView(APIView):
-    @csrf_exempt
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
-
-    def post(self, request):
-        action = request.POST.get('action')
-        if action == 'add':
-            return self.add_row_schedule(request)
-        elif action == 'delete':
-            return self.delete_row_schedule(request)
-        elif action == 'update':
-            return self.update_row_schedule(request)
-        elif action == 'get_all':
-            return self.get_all_rows(request)
-        elif action == 'get_row':
-            return self.get_row_by_id(request)
+        if date and lab:
+            queryset = BasicUser.objects.filter(days__date=date, lab=lab)
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
         else:
-            return Response({'error': 'Wrong action'}, status=400)
-
-    @staticmethod
-    def add_row_schedule(request):
-        try:
-            data = request.POST
-            Schedule.objects.create(
-                employee=BasicUser.objects.get(id=data.get('employee')),
-                lab=Lab.objects.get(id=data.get('lab')),
-                date=datetime.strptime(data.get('date'), '%Y-%m-%d')
-            )
-            return Response({'message': 'Row was added'})
-        except Lab.DoesNotExist:
-            return Response({'error': 'Lab does not exist'}, status=400)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
-
-    @staticmethod
-    def delete_row_schedule(request):
-        try:
-            row = get_object_or_404(Schedule, id=request.POST.get('id'))
-            row.delete()
-            return HttpResponse("{status: 200}")
-
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'Row does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
-
-    @staticmethod
-    def update_row_schedule(request):
-        try:
-            row_id = request.POST.get('id')
-            row = get_object_or_404(Schedule, id=row_id)
-            date = request.POST.get('date')
-            if date:
-                row.date = date
-            user_id = request.POST.get('employee')
-            if user_id:
-                user = BasicUser.objects.get(id=user_id)
-                if user:
-                    row.employee = user
-            lab_id = request.POST.get('lab')
-            if lab_id:
-                lab = Lab.objects.get(id=lab_id)
-                if lab:
-                    row.lab = lab
-            row.save()
-            return Response({'message': 'Row updated'})
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'User does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
-
-    @staticmethod
-    def get_all_rows(request):
-        rows = Schedule.objects.all()
-        rows_list = list(rows.values())
-
-        return Response(rows_list)
-
-    @staticmethod
-    def get_row_by_id(request):
-        try:
-            data = request.POST
-            row_id = data.get('id')
-            if row_id:
-                row = Schedule.objects.get(id=row_id)
-                row_dict = model_to_dict(row)
-                return JsonResponse(row_dict, safe=False)
-
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'Row does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            return Response({"message": "Please provide both 'date' and 'lab' parameters."},
+                            status=HTTP_400_BAD_REQUEST)
 
 
-class OrderView(APIView):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.model = None
-        self.status_model = None
+class ScheduleViewSet(viewsets.ModelViewSet):
+    """
+        Operations with schedule.
 
-    @csrf_exempt
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
+        This viewset provides CRUD operations for managing schedule.
 
-    def post(self, request):
-        type_order = request.POST.get('type')
-        if type_order == 'company':
-            self.model = CompanyOrder
-            self.status_model = CompanyOrderStatus
-        elif type_order == 'basic':
-            self.model = Order
-            self.status_model = OrderStatus
+        retrieve:
+        Retrieve a schedule instance.
 
-        action = request.POST.get('action')
-        if action == 'add':
-            return self.add_order(request)
-        elif action == 'delete':
-            return self.delete_order(request)
-        elif action == 'update':
-            return self.update_order(request)
-        elif action == 'get_all':
-            return self.get_all_orders(request)
-        elif action == 'get_order':
-            return self.get_order_by_id(request)
-        else:
-            return Response({'error': 'Wrong action'}, status=400)
+        list:
+        Retrieve a list of schedules.
 
-    def add_order(self, request):
-        try:
-            data = request.POST
-            self.model.objects.create(
-                lab=Lab.objects.get(id=data.get('lab')),
-                order_name=data.get('order_name'),
-                description=data.get('description'),
-                status=self.status_model.objects.get(status_name=data.get('status')),
-                exec=BasicUser.objects.get(id=data.get('exec')),
-                order_creator=BasicUser.objects.get(id=data.get('order_creator')),
-                deadline=data.get('deadline')
-            )
-            return Response({'message': 'Order was added'})
-        except Lab.DoesNotExist:
-            return Response({'error': 'Lab does not exist'}, status=400)
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'User does not exist'}, status=400)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        create:
+        Create a new schedule instance.
 
-    def delete_order(self, request):
-        try:
-            order = get_object_or_404(self.model, id=request.POST.get('id'))
-            order.delete()
-            return Response("{status: 200}")
+        update:
+        Update a schedule instance.
 
-        except self.model.DoesNotExist:
-            return Response({'error': 'Order does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        partial_update:
+        Partially update a schedule instance.
 
-    def update_order(self, request):
-        try:
-            order_id = request.POST.get('id')
-            order = get_object_or_404(self.model, id=order_id)
-            order_name = request.POST.get('order_name')
-            if order_name:
-                order.order_name = order_name
-            deadline = request.POST.get('deadline')
-            if deadline:
-                order.deadline = deadline
-            exec_id = request.POST.get('exec')
-            if exec_id:
-                user = BasicUser.objects.get(id=exec_id)
-                if user:
-                    order.exec = user
-            creator_id = request.POST.get('order_creator')
-            if creator_id:
-                user = BasicUser.objects.get(id=creator_id)
-                if user:
-                    order.exec = user
-            lab_id = request.POST.get('lab')
-            if lab_id:
-                lab = Lab.objects.get(id=lab_id)
-                if lab:
-                    order.lab = lab
-            status_name = request.POST.get('status')
-            if status_name:
-                status = self.status_model.objects.get(status_name=status_name)
-                if status:
-                    order.status = status
-            order.save()
-            return Response({'message': 'Order updated'})
-        except self.model.DoesNotExist:
-            return Response({'error': 'Order does not exist'}, status=404)
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'User does not exist'}, status=404)
-        except Lab.DoesNotExist:
-            return Response({'error': 'Lab does not exist'}, status=400)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        destroy:
+        Delete a schedule instance.
+    """
 
-    def get_all_orders(self, request):
-        orders = self.model.objects.all()
-        orders_list = list(orders.values())
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleDetailSerializer
 
-        return Response(orders_list)
-
-    def get_order_by_id(self, request):
-        try:
-            data = request.POST
-            order_id = data.get('id')
-            if order_id:
-                order = self.model.objects.get(id=order_id)
-                order_dict = model_to_dict(order)
-                return Response(order_dict)
-
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'Order does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ScheduleListSerializer
+        elif self.action == 'create':
+            return ScheduleCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return ScheduleUpdateSerializer
+        elif self.action in ['retrieve', 'destroy']:
+            return ScheduleDetailSerializer
+        return super().get_serializer_class()
 
 
-class NewsView(APIView):
-    @csrf_exempt
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
+class OrderViewSet(viewsets.ModelViewSet):
+    """
+        Operations with orders.
 
-    def post(self, request):
-        action = request.POST.get('action')
-        if action == 'add':
-            return self.add_new(request)
-        elif action == 'delete':
-            return self.delete_new(request)
-        elif action == 'update':
-            return self.update_new(request)
-        elif action == 'get_all':
-            return self.get_all_news(request)
-        elif action == 'get_new':
-            return self.get_new_by_id(request)
-        else:
-            return Response({'error': 'Wrong action'}, status=400)
+        This viewset provides CRUD operations for managing orders.
 
-    @staticmethod
-    def add_new(request):
-        try:
-            data = request.POST
-            News.objects.create(
-                news_type=NewsType.objects.get(type=data.get('type')),
-                header=data.get('header'),
-                content=data.get('content'),
-                picture=data.get('picture'),
-                telegram_post=data.get('tg_post'),
-                editor=BasicUser.objects.get(id=data.get('editor')),
-            )
-            return Response({'message': 'New was added'})
-        except NewsType.DoesNotExist:
-            return Response({'error': 'NewsType does not exist'}, status=400)
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'Editor does not exist'}, status=400)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        retrieve:
+        Retrieve an order instance.
 
-    @staticmethod
-    def delete_new(request):
-        try:
-            row = get_object_or_404(News, id=request.POST.get('id'))
-            row.delete()
-            return Response("{status: 200}")
+        list:
+        Retrieve a list of orders.
 
-        except BasicUser.DoesNotExist:
-            return Response({'error': 'New does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        create:
+        Create a new order instance.
 
-    @staticmethod
-    def update_new(request):
-        try:
-            new_id = request.POST.get('id')
-            new = get_object_or_404(News, id=new_id)
+        update:
+        Update an order instance.
 
-            fields_to_update = ['header', 'picture', 'content', 'tg_post']
-            for field in fields_to_update:
-                value = request.POST.get(field)
-                if value:
-                    setattr(new, field, value)
+        partial_update:
+        Partially update an order instance.
 
-            new_type_id = request.POST.get('new_type')
-            if new_type_id:
-                user = BasicUser.objects.get(id=new_type_id)
-                if user:
-                    new.employee = user
-            user_id = request.POST.get('editor')
-            if user_id:
-                user = BasicUser.objects.get(id=user_id)
-                if user:
-                    new.employee = user
-            new.save()
-            return Response({'message': 'New updated'})
-        except News.DoesNotExist:
-            return Response({'error': 'User does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        destroy:
+        Delete an order instance.
+    """
 
-    @staticmethod
-    def get_all_news(request):
-        news = News.objects.all()
-        news_list = list(news.values())
+    queryset = Order.objects.all()
+    serializer_class = OrderDetailSerializer
 
-        return Response(news_list)
-
-    @staticmethod
-    def get_new_by_id(request):
-        try:
-            data = request.POST
-            new_id = data.get('id')
-            if new_id:
-                new = News.objects.get(id=new_id)
-                new_dict = model_to_dict(new)
-                return Response(new_dict)
-
-        except News.DoesNotExist:
-            return Response({'error': 'New does not exist'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return OrderListSerializer
+        elif self.action == 'create':
+            return OrderCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return OrderUpdateSerializer
+        elif self.action in ['retrieve', 'destroy']:
+            return OrderDetailSerializer
+        return super().get_serializer_class()
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+class CompanyOrderViewSet(viewsets.ModelViewSet):
+    """
+        Operations with company orders.
+
+        This viewset provides CRUD operations for managing company orders.
+
+        retrieve:
+        Retrieve a company order instance.
+
+        list:
+        Retrieve a list of company orders.
+
+        create:
+        Create a new company order instance.
+
+        update:
+        Update a company order instance.
+
+        partial_update:
+        Partially update a company order instance.
+
+        destroy:
+        Delete a company order instance.
+    """
+
+    queryset = CompanyOrder.objects.all()
+    serializer_class = CompanyOrderDetailSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return CompanyOrderListSerializer
+        elif self.action == 'create':
+            return CompanyOrderCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return CompanyOrderUpdateSerializer
+        elif self.action in ['retrieve', 'destroy']:
+            return CompanyOrderDetailSerializer
+        return super().get_serializer_class()
+
+
+class NewsViewSet(viewsets.ModelViewSet):
+    """
+        Operations with news.
+
+        This viewset provides CRUD operations for managing news.
+
+        retrieve:
+        Retrieve a news instance.
+
+        list:
+        Retrieve a list of news.
+
+        create:
+        Create a new news instance.
+
+        update:
+        Update a news instance.
+
+        partial_update:
+        Partially update a news instance.
+
+        destroy:
+        Delete a news instance.
+    """
+
+    queryset = News.objects.all()
+    serializer_class = NewsDetailSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return NewsListSerializer
+        elif self.action == 'create':
+            return NewsCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return NewsUpdateSerializer
+        elif self.action in ['retrieve', 'destroy']:
+            return NewsDetailSerializer
+        return super().get_serializer_class()
 
 
 class LoginView(APIView):
