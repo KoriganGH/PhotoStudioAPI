@@ -28,7 +28,7 @@ urlpatterns = [
     # path('orders/', OrderView.as_view(), name='orders-management'),
     # path('news/', NewsView.as_view(), name='news-management'),
     path('login/', LoginView.as_view(), name='login'),
-    path('api/', include(router.urls))
+    path('api/', include(router.urls)),
 ]
 
 urlpatterns += doc_urls

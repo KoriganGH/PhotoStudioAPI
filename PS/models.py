@@ -27,22 +27,20 @@ class Role(Model):
 
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, username=None, password=None, lab=None, role=None, **extra_fields):
+    def create_user(self, username, password, lab, role, **extra_fields):
         if not username:
             raise ValueError('The Username field must be set')
-        if not password:
-            raise ValueError('The password field must be set')
         if not lab:
             raise ValueError('The Lab field must be set')
         if not role:
             raise ValueError('The Role field must be set')
 
-        user = self.model(username=username, **extra_fields)
+        user = self.model(username=username, lab=lab, role=role, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username=None, password=None, **extra_fields):
+    def create_superuser(self, username, password, lab, role, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -51,7 +49,7 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(username, password, **extra_fields)
+        return self.create_user(username, password, lab, role, **extra_fields)
 
 
 class BasicUser(AbstractUser):
@@ -65,6 +63,8 @@ class BasicUser(AbstractUser):
     permissions = JSONField(null=True)
     availableToday = BooleanField(null=True)
     registration_date = DateTimeField(auto_now_add=True)
+
+    objects = CustomUserManager()
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)

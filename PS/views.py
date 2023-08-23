@@ -1,28 +1,54 @@
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
-from django.shortcuts import render, get_object_or_404
-from django.forms.models import model_to_dict
-from django.http import HttpResponse, JsonResponse
-from rest_framework import generics
 from rest_framework.decorators import action
-from PS.models import BasicUser, Role, Lab, Schedule, Order, OrderStatus, CompanyOrder, CompanyOrderStatus, News, \
-    NewsType
-from django.views.decorators.csrf import csrf_exempt
-from datetime import datetime
-from django.contrib.auth.decorators import login_required
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST, \
     HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from .serializers import *
 from rest_framework import viewsets
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import authenticate, login
+from rest_framework.authentication import SessionAuthentication
+
+
+class LoginView(APIView):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'password'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING),
+                'password': openapi.Schema(type=openapi.TYPE_STRING),
+            }
+        ),
+        responses={
+            200: 'Авторизация успешна.',
+            401: 'Неверные учетные данные.',
+            400: 'Пожалуйста, предоставьте имя пользователя и пароль.'
+        }
+    )
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        if username is None or password is None:
+            return Response({'error': 'Пожалуйста, предоставьте имя пользователя и пароль.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            login(request, user)
+            return Response({'message': 'Авторизация успешна.'})
+        else:
+            return Response({'error': 'Неверные учетные данные.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     """
         Operations with users.
 
@@ -99,6 +125,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class ScheduleViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     """
         Operations with schedule.
 
@@ -139,6 +167,8 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     """
         Operations with orders.
 
@@ -179,6 +209,8 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 
 class CompanyOrderViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     """
         Operations with company orders.
 
@@ -219,6 +251,8 @@ class CompanyOrderViewSet(viewsets.ModelViewSet):
 
 
 class NewsViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     """
         Operations with news.
 
@@ -257,40 +291,3 @@ class NewsViewSet(viewsets.ModelViewSet):
             return NewsDetailSerializer
         return super().get_serializer_class()
 
-
-class LoginView(APIView):
-    permission_classes = []
-
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING),
-                'password': openapi.Schema(type=openapi.TYPE_STRING),
-            },
-            required=['username', 'password'],
-        )
-    )
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-
-        if username is None or password is None:
-            return Response({'error': 'Please provide both username and password.'}, status=400)
-
-        user = authenticate(username=username, password=password)
-
-        if user is None:
-            return Response({'error': 'Invalid credentials.'}, status=401)
-
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        return Response({'access_token': access_token})
-
-
-class ProtectedView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        return Response({'message': 'This is a protected view.'})

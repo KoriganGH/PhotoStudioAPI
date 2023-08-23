@@ -43,12 +43,23 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BasicUser
-        fields = "__all__"
+        fields = ('username', 'password', 'lab', 'role')
         extra_kwargs = {
             'lab': {'required': True},
             'role': {'required': True},
             'password': {'write_only': True}
         }
+
+    def create(self, validated_data):
+        username = validated_data.pop['username']
+        password = validated_data.pop('password')
+        lab = validated_data.pop('lab')
+        role = validated_data.pop('role')
+
+        # временное решение
+        user = BasicUser.objects.create_user(username=username, password=password, lab=lab, role=role)
+
+        return user
 
 
 # возможно избыточный
@@ -130,6 +141,14 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             'lab': {'required': True},
             'order_creator': {'required': True}
         }
+
+    # def create(self, request):
+    #     exec = request.get('exec')
+    #     if exec:
+    #         if exec.orders_count:
+    #             exec.orders_count += 1
+    #         else:
+    #             exec.orders_count = 1
 
 
 # возможно избыточный
